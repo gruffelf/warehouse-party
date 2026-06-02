@@ -311,7 +311,7 @@
       </svg>
       <div class="bubble" id="bubble">
         Come back in:<br>
-        <span id="countdown" aria-live="polite">7 days 00:00:00</span>
+        <span id="countdown" aria-live="off" aria-atomic="true">7 days 00:00:00</span>
         ...for the location 👀
       </div>
     </div>
@@ -321,13 +321,13 @@
       class="warehouse-image"
       type="image/svg+xml"
       data="warehouse.svg"
-      aria-label="Warehouse illustration"
+      aria-hidden="true"
       tabindex="-1">
       Warehouse illustration
     </object>
   </button>
 
-  <p class="click-hint" id="clickHint" aria-live="polite">[ click / enter / space ]</p>
+  <p class="click-hint" id="clickHint">[ click, press enter, or press space ]</p>
 </main>
 
 <div id="notes" aria-hidden="true"></div>
@@ -354,7 +354,8 @@ const CONFIG = {
   effects: {
     bubbleDelayMs: 350,
     rumbleStopMs: 800,
-    rumbleLoopMs: 120
+    rumbleLoopMs: 120,
+    initialPositionDelayMs: 500
   },
   audio: {
     lowPassHz: 140,
@@ -443,7 +444,7 @@ function initAudioEngine() {
     insideGain.connect(context.destination);
 
     track.addEventListener('error', () => {
-      showAudioErrorOnce('music.mp3 could not be played.');
+      showAudioErrorOnce('music.mp3 could not be loaded. Check file path or network access.');
     });
 
     audioEngine = {
@@ -474,7 +475,8 @@ async function ensureAudioPlaying() {
     if (audio.track.paused) {
       await audio.track.play();
     }
-  } catch {
+  } catch (error) {
+    console.warn('Audio playback error:', error);
     showAudioErrorOnce('Audio playback was blocked.');
   }
 }
@@ -506,6 +508,7 @@ function updateCountdown() {
   const now = new Date();
   const diff = UNLOCK_DATE - now;
   if (diff <= 0) {
+    countdownEl.setAttribute('aria-live', 'polite');
     countdownEl.textContent = 'NOW! 🎉';
     return;
   }
@@ -654,6 +657,7 @@ function handleWrapClick(event) {
 
 function handleWrapKeyDown(event) {
   if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
     handleWarehouseToggle(event);
   }
 }
@@ -676,7 +680,10 @@ function cleanupAudio() {
   audio.outsideLPF.disconnect();
   audio.outsideGain.disconnect();
   audio.insideGain.disconnect();
-  audio.context.close().catch(() => {});
+  audio.context.close().catch((error) => {
+    console.warn('AudioContext close failed:', error);
+  });
+  audioEngine = null;
 }
 
 function cleanup() {
@@ -708,7 +715,7 @@ countdownInterval = setInterval(updateCountdown, 1000);
 
 warehouseObject.addEventListener('load', initWarehouseRefs);
 window.addEventListener('resize', positionHead);
-setTimeout(positionHead, 500);
+setTimeout(positionHead, CONFIG.effects.initialPositionDelayMs);
 
 wrap.addEventListener('click', handleWrapClick);
 wrap.addEventListener('keydown', handleWrapKeyDown);
