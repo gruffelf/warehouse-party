@@ -334,7 +334,7 @@
 
 <script>
 const CONFIG = {
-  unlockDays: 7,
+  
   svg: {
     width: 520,
     height: 320,
@@ -366,13 +366,13 @@ const CONFIG = {
 };
 
 let isOpen = false;
-let quietStarted = false;
 
-const UNLOCK_DATE = (() => {
-  const d = new Date();
-  d.setDate(d.getDate() + CONFIG.unlockDays);
-  return d;
-})();
+// =====================
+// EDIT THESE
+// =====================
+const REVEAL_DATE = new Date("2026-12-31T20:00:00");
+const LOCATION_TEXT = "LOCATION GOES HERE";
+// =====================
 
 const wrap = document.getElementById('warehouseWrap');
 const headWrap = document.getElementById('headWrap');
@@ -506,10 +506,10 @@ function goInside() {
 
 function updateCountdown() {
   const now = new Date();
-  const diff = UNLOCK_DATE - now;
+  const diff = REVEAL_DATE - now;
   if (diff <= 0) {
-    countdownEl.setAttribute('aria-live', 'polite');
-    countdownEl.textContent = 'NOW! 🎉';
+    bubble.innerHTML = `<strong>📍 Location:</strong><br><br>${LOCATION_TEXT}`;
+    clearInterval(countdownInterval);
     return;
   }
   const days = Math.floor(diff / 86400000);
@@ -640,15 +640,8 @@ function closeWarehouse() {
 
 function handleWarehouseToggle(event) {
   event.preventDefault();
-  if (!quietStarted) {
-    quietStarted = true;
-    startQuiet();
-  }
-  if (isOpen) {
-    closeWarehouse();
-  } else {
-    openWarehouse();
-  }
+  if (isOpen) closeWarehouse();
+  else openWarehouse();
 }
 
 function handleWrapClick(event) {
@@ -662,10 +655,9 @@ function handleWrapKeyDown(event) {
   }
 }
 
-function handleFirstInteraction() {
-  if (quietStarted) return;
-  quietStarted = true;
-  startQuiet();
+async function handleFirstInteraction() {
+  await ensureAudioPlaying();
+  goOutside();
 }
 
 function cleanupAudio() {
