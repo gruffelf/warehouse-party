@@ -17,6 +17,7 @@
 
   body {
     background: #0a0a1a;
+    min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -25,7 +26,7 @@
     overflow: hidden;
     font-family: 'Boogaloo', cursive;
     position: relative;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 
   .stars {
@@ -285,7 +286,7 @@
   <h1 class="title" id="partyTitle">⚡ ??? ⚡</h1>
   <p class="subtitle">something is happening somewhere</p>
 
-  <button class="warehouse-wrap" id="warehouseWrap" type="button" aria-expanded="false" aria-label="Toggle warehouse party mode">
+  <button class="warehouse-wrap" id="warehouseWrap" type="button" aria-expanded="false" aria-label="Open warehouse party mode">
     <div class="head-wrap" id="headWrap" aria-hidden="true">
       <svg width="54" height="70" viewBox="0 0 54 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="19" y="52" width="16" height="18" fill="#f5c589" rx="3"/>
@@ -326,7 +327,7 @@
     </object>
   </button>
 
-  <p class="click-hint" id="clickHint">[ click / enter / space ]</p>
+  <p class="click-hint" id="clickHint" aria-live="polite">[ click / enter / space ]</p>
 </main>
 
 <div id="notes" aria-hidden="true"></div>
@@ -395,6 +396,7 @@ let countdownInterval = null;
 let rumbleInterval = null;
 let notePool = [];
 let notePoolIndex = 0;
+const noteHideTimers = new WeakMap();
 
 const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
 let audioErrorShown = false;
@@ -405,6 +407,7 @@ function showAudioErrorOnce(message) {
   audioErrorShown = true;
   console.warn(message);
   clickHint.textContent = '[ visual mode: audio unavailable ]';
+  clickHint.style.opacity = '1';
 }
 
 function initAudioEngine() {
@@ -546,9 +549,10 @@ function spawnNote() {
   const noteEl = notePool[notePoolIndex];
   notePoolIndex = (notePoolIndex + 1) % notePool.length;
 
-  if (noteEl.hideTimer) {
-    clearTimeout(noteEl.hideTimer);
-    noteEl.hideTimer = null;
+  const existingTimer = noteHideTimers.get(noteEl);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    noteHideTimers.delete(noteEl);
   }
 
   noteEl.classList.remove('active');
@@ -560,10 +564,11 @@ function spawnNote() {
   noteEl.style.fontSize = `${CONFIG.notes.baseSize + Math.random() * CONFIG.notes.sizeVariance}px`;
 
   requestAnimationFrame(() => noteEl.classList.add('active'));
-  noteEl.hideTimer = setTimeout(() => {
+  const hideTimer = setTimeout(() => {
     noteEl.classList.remove('active');
-    noteEl.hideTimer = null;
+    noteHideTimers.delete(noteEl);
   }, CONFIG.notes.hideAfterMs);
+  noteHideTimers.set(noteEl, hideTimer);
 }
 
 function setNotesInterval(ms) {
@@ -583,6 +588,7 @@ function openWarehouse() {
   if (isOpen) return;
   isOpen = true;
   wrap.setAttribute('aria-expanded', 'true');
+  wrap.setAttribute('aria-label', 'Close warehouse party mode');
 
   ensureAudioPlaying();
   goInside();
@@ -612,6 +618,7 @@ function closeWarehouse() {
   if (!isOpen) return;
   isOpen = false;
   wrap.setAttribute('aria-expanded', 'false');
+  wrap.setAttribute('aria-label', 'Open warehouse party mode');
 
   goOutside();
   setNotesInterval(CONFIG.notes.closeIntervalMs);
@@ -662,7 +669,7 @@ function cleanupAudio() {
   if (!audio || !audio.enabled) return;
 
   audio.track.pause();
-  audio.track.removeAttribute('src');
+  audio.track.src = '';
   audio.track.load();
 
   audio.source.disconnect();
@@ -685,7 +692,11 @@ function cleanup() {
   if (rumbleInterval) clearInterval(rumbleInterval);
 
   notePool.forEach((note) => {
-    if (note.hideTimer) clearTimeout(note.hideTimer);
+    const timer = noteHideTimers.get(note);
+    if (timer) {
+      clearTimeout(timer);
+      noteHideTimers.delete(note);
+    }
   });
 
   cleanupAudio();
