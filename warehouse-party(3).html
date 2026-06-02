@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>??? PARTY ???</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Boogaloo&family=VT323&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: 'Boogaloo', cursive;
+    position: relative;
+  }
+
+  /* Stars */
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d) ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.2; transform: scale(1); }
+    to   { opacity: 1;   transform: scale(1.4); }
+  }
+
+  /* Ground */
+  .ground {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: #1a1a2e;
+    border-top: 3px solid #2a2a4e;
+    z-index: 1;
+  }
+  .ground::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 8px;
+    background: repeating-linear-gradient(90deg, #2a2a4e 0px, #2a2a4e 20px, #1a1a2e 20px, #1a1a2e 40px);
+  }
+
+  /* Scene wrapper */
+  .scene {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Title */
+  .title {
+    font-family: 'VT323', monospace;
+    font-size: clamp(32px, 6vw, 64px);
+    color: #ff6bff;
+    text-shadow: 0 0 10px #ff6bff, 0 0 30px #ff00ff;
+    letter-spacing: 6px;
+    margin-bottom: 12px;
+    animation: pulse 2s ease-in-out infinite;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: clamp(14px, 2.5vw, 22px);
+    color: #888;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  @keyframes pulse {
+    0%, 100% { text-shadow: 0 0 10px #ff6bff, 0 0 30px #ff00ff; }
+    50%       { text-shadow: 0 0 20px #ff6bff, 0 0 60px #ff00ff, 0 0 80px #aa00aa; }
+  }
+
+  /* WAREHOUSE SVG wrapper */
+  .warehouse-wrap {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .warehouse-wrap:active { transform: scale(0.98); }
+
+  .click-hint {
+    text-align: center;
+    color: #555;
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-top: 10px;
+    animation: blink 2.5s step-end infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  /* Head peek overlay */
+  .head-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .head-wrap.visible { opacity: 1; }
+
+  /* Speech bubble */
+  .bubble {
+    position: absolute;
+    background: #fffde7;
+    border: 3px solid #333;
+    border-radius: 16px;
+    padding: 12px 16px;
+    font-size: clamp(13px, 2vw, 17px);
+    color: #222;
+    line-height: 1.4;
+    width: 220px;
+    text-align: center;
+    left: 60px;
+    top: -10px;
+    box-shadow: 4px 4px 0 #333;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.4s ease 0.3s, transform 0.4s ease 0.3s;
+    pointer-events: none;
+  }
+  .bubble.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .bubble::before {
+    content: '';
+    position: absolute;
+    left: -18px;
+    top: 18px;
+    border: 8px solid transparent;
+    border-right-color: #333;
+  }
+  .bubble::after {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 20px;
+    border: 6px solid transparent;
+    border-right-color: #fffde7;
+  }
+
+  #countdown {
+    font-weight: bold;
+    color: #e53935;
+    display: block;
+    font-size: 1.1em;
+    margin-top: 4px;
+  }
+
+  /* Light beams */
+  .beam {
+    position: fixed;
+    bottom: 80px;
+    width: 3px;
+    height: 55vh;
+    transform-origin: bottom center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: 2;
+    filter: blur(2px);
+  }
+  .beam.active { opacity: 0.18; }
+  .beam:nth-child(1) { left: 10%; background: linear-gradient(to top, #ff00ff, transparent); animation: swing1 3s ease-in-out infinite; }
+  .beam:nth-child(2) { left: 25%; background: linear-gradient(to top, #00ffff, transparent); animation: swing2 2.7s ease-in-out infinite; }
+  .beam:nth-child(3) { right: 25%; background: linear-gradient(to top, #ffff00, transparent); animation: swing3 3.3s ease-in-out infinite; }
+  .beam:nth-child(4) { right: 10%; background: linear-gradient(to top, #ff4400, transparent); animation: swing1 2.5s ease-in-out infinite reverse; }
+  @keyframes swing1 { 0%,100%{transform:rotate(-25deg)} 50%{transform:rotate(25deg)} }
+  @keyframes swing2 { 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-30deg)} }
+  @keyframes swing3 { 0%,100%{transform:rotate(-15deg)} 50%{transform:rotate(35deg)} }
+
+  /* Music note floaters */
+  .note {
+    position: fixed;
+    font-size: 24px;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0;
+    color: #ff6bff;
+  }
+  .note.active {
+    animation: floatNote 3s ease-out forwards;
+  }
+  @keyframes floatNote {
+    0%   { opacity: 0.9; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0;   transform: translateY(-120px) rotate(30deg); }
+  }
+
+  /* Rumble */
+  @keyframes rumble {
+    0%,100% { transform: translateX(0); }
+    25%     { transform: translateX(-2px) rotate(-0.5deg); }
+    75%     { transform: translateX(2px)  rotate(0.5deg); }
+  }
+  .rumbling { animation: rumble 0.12s linear infinite; }
+</style>
+</head>
+<body>
+
+<!-- Beams -->
+<div class="beam" id="b1"></div>
+<div class="beam" id="b2"></div>
+<div class="beam" id="b3"></div>
+<div class="beam" id="b4"></div>
+
+<!-- Stars canvas -->
+<div class="stars" id="stars"></div>
+<div class="ground"></div>
+
+<div class="scene">
+  <div class="title">⚡ ??? ⚡</div>
+  <p class="subtitle">something is happening somewhere</p>
+
+  <div class="warehouse-wrap" id="warehouseWrap">
+
+    <!-- HEAD peeks from door -->
+    <div class="head-wrap" id="headWrap">
+      <svg width="54" height="70" viewBox="0 0 54 70" xmlns="http://www.w3.org/2000/svg">
+        <!-- neck -->
+        <rect x="19" y="52" width="16" height="18" fill="#f5c589" rx="3"/>
+        <!-- head -->
+        <ellipse cx="27" cy="34" rx="22" ry="26" fill="#f5c589"/>
+        <!-- beanie -->
+        <ellipse cx="27" cy="12" rx="22" ry="8" fill="#222"/>
+        <rect x="5" y="10" width="44" height="8" fill="#222" rx="3"/>
+        <circle cx="27" cy="7" r="4" fill="#ff6bff"/>
+        <!-- eyes -->
+        <circle cx="19" cy="34" r="4" fill="white"/>
+        <circle cx="35" cy="34" r="4" fill="white"/>
+        <circle cx="20" cy="34" r="2.5" fill="#111"/>
+        <circle cx="36" cy="34" r="2.5" fill="#111"/>
+        <circle cx="21" cy="33" r="1" fill="white"/>
+        <circle cx="37" cy="33" r="1" fill="white"/>
+        <!-- suspicious brows -->
+        <path d="M14 27 Q19 24 24 27" stroke="#8B4513" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M30 27 Q35 24 40 27" stroke="#8B4513" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- mouth -->
+        <path d="M21 44 Q27 48 33 44" stroke="#c0725a" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- ear -->
+        <ellipse cx="5" cy="35" rx="4" ry="6" fill="#f0b070"/>
+        <ellipse cx="49" cy="35" rx="4" ry="6" fill="#f0b070"/>
+        <!-- stubble dots -->
+        <circle cx="21" cy="46" r="1.2" fill="#daa070" opacity="0.7"/>
+        <circle cx="27" cy="47" r="1.2" fill="#daa070" opacity="0.7"/>
+        <circle cx="33" cy="46" r="1.2" fill="#daa070" opacity="0.7"/>
+      </svg>
+      <div class="bubble" id="bubble">
+        Come back in:<br>
+        <span id="countdown">7 days 00:00:00</span>
+        ...for the location 👀
+      </div>
+    </div>
+
+    <!-- WAREHOUSE SVG -->
+    <svg id="warehouseSvg" width="520" height="320" viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg" style="pointer-events:all;display:block;touch-action:manipulation;">
+
+      <!-- Background glow behind warehouse -->
+      <ellipse cx="260" cy="310" rx="200" ry="30" fill="#1a0030" opacity="0.8"/>
+
+      <!-- Side walls (perspective) -->
+      <polygon points="30,260 60,100 460,100 490,260" fill="#1e1e3a" stroke="#2a2a5a" stroke-width="2"/>
+
+      <!-- Roof peak -->
+      <polygon points="10,105 260,30 510,105" fill="#16162e" stroke="#2a2a5a" stroke-width="3"/>
+      <!-- Roof trim -->
+      <rect x="10" y="103" width="500" height="8" fill="#2a2a5a" rx="2"/>
+
+      <!-- Roof detail lines -->
+      <line x1="260" y1="30" x2="260" y2="108" stroke="#3a3a6a" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <line x1="155" y1="70" x2="155" y2="108" stroke="#3a3a6a" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="365" y1="70" x2="365" y2="108" stroke="#3a3a6a" stroke-width="1" stroke-dasharray="4,4"/>
+
+      <!-- Main facade -->
+      <rect x="60" y="100" width="400" height="160" fill="#1c1c38" stroke="#2a2a5a" stroke-width="2"/>
+
+      <!-- Corrugated metal effect - horizontal lines -->
+      <g stroke="#22224a" stroke-width="0.8" opacity="0.6">
+        <line x1="60" y1="115" x2="460" y2="115"/>
+        <line x1="60" y1="125" x2="460" y2="125"/>
+        <line x1="60" y1="135" x2="460" y2="135"/>
+        <line x1="60" y1="145" x2="460" y2="145"/>
+        <line x1="60" y1="155" x2="460" y2="155"/>
+        <line x1="60" y1="165" x2="460" y2="165"/>
+        <line x1="60" y1="175" x2="460" y2="175"/>
+        <line x1="60" y1="185" x2="460" y2="185"/>
+        <line x1="60" y1="195" x2="460" y2="195"/>
+        <line x1="60" y1="205" x2="460" y2="205"/>
+        <line x1="60" y1="215" x2="460" y2="215"/>
+        <line x1="60" y1="225" x2="460" y2="225"/>
+        <line x1="60" y1="235" x2="460" y2="235"/>
+        <line x1="60" y1="245" x2="460" y2="245"/>
+      </g>
+
+      <!-- Window left - boarded up -->
+      <rect x="90" y="130" width="80" height="60" fill="#111128" stroke="#2a2a5a" stroke-width="2" rx="2"/>
+      <line x1="90" y1="130" x2="170" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+      <line x1="170" y1="130" x2="90" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+      <!-- window glow leak -->
+      <rect x="90" y="130" width="80" height="60" fill="#ff00ff" opacity="0.04" rx="2"/>
+      <ellipse cx="130" cy="160" rx="30" ry="22" fill="#ff00ff" opacity="0.03"/>
+
+      <!-- Window right - boarded up -->
+      <rect x="350" y="130" width="80" height="60" fill="#111128" stroke="#2a2a5a" stroke-width="2" rx="2"/>
+      <line x1="350" y1="130" x2="430" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+      <line x1="430" y1="130" x2="350" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+      <rect x="350" y="130" width="80" height="60" fill="#00ffff" opacity="0.03" rx="2"/>
+      <ellipse cx="390" cy="160" rx="30" ry="22" fill="#00ffff" opacity="0.03"/>
+
+      <!-- Door frame -->
+      <rect x="210" y="165" width="100" height="95" fill="#111122" stroke="#2a2a5a" stroke-width="3" rx="3"/>
+      <!-- Door panels -->
+      <rect x="215" y="170" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+      <rect x="263" y="170" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+      <rect x="215" y="215" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+      <rect x="263" y="215" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+
+      <!-- Door bottom gap glow (music leaking) -->
+      <rect x="212" y="255" width="96" height="5" fill="#ff00ff" opacity="0.25" rx="1"/>
+      <ellipse cx="260" cy="260" rx="60" ry="8" fill="#ff00ff" opacity="0.08"/>
+
+      <!-- Door handle -->
+      <circle cx="257" cy="213" r="3.5" fill="#444466" stroke="#666688" stroke-width="1"/>
+
+      <!-- Sign above door -->
+      <rect x="210" y="148" width="100" height="18" fill="#111" stroke="#333355" stroke-width="1.5" rx="3"/>
+      <text x="260" y="161" text-anchor="middle" fill="#666" font-family="monospace" font-size="10" letter-spacing="2">WAREHOUSE</text>
+
+      <!-- Number 47 spray painted -->
+      <text x="95" y="200" fill="#ff6bff" font-family="'Boogaloo', cursive" font-size="28" opacity="0.3" transform="rotate(-5,95,200)">47</text>
+
+      <!-- Graffiti squiggles -->
+      <path d="M380 200 Q390 195 400 200 Q410 205 420 200" stroke="#ff6bff" stroke-width="2" fill="none" opacity="0.25"/>
+      <text x="345" y="248" fill="#00ffff" font-family="monospace" font-size="9" opacity="0.3">NO TRESPASS</text>
+
+      <!-- Vent -->
+      <rect x="228" y="110" width="64" height="30" fill="#111128" stroke="#2a2a5a" stroke-width="1.5" rx="3"/>
+      <g stroke="#2a2a5a" stroke-width="1">
+        <line x1="237" y1="110" x2="237" y2="140"/>
+        <line x1="246" y1="110" x2="246" y2="140"/>
+        <line x1="255" y1="110" x2="255" y2="140"/>
+        <line x1="264" y1="110" x2="264" y2="140"/>
+        <line x1="273" y1="110" x2="273" y2="140"/>
+        <line x1="282" y1="110" x2="282" y2="140"/>
+      </g>
+      <!-- Vent vibration glow when music loud -->
+      <rect x="228" y="110" width="64" height="30" fill="#ff00ff" opacity="0" rx="3" id="ventGlow"/>
+
+      <!-- Street lamp left -->
+      <line x1="55" y1="260" x2="55" y2="180" stroke="#3a3a5a" stroke-width="4"/>
+      <path d="M55,185 Q55,170 75,170" stroke="#3a3a5a" stroke-width="3" fill="none"/>
+      <ellipse cx="76" cy="169" rx="8" ry="5" fill="#ffffcc" opacity="0.9"/>
+      <ellipse cx="76" cy="172" rx="15" ry="10" fill="#ffffaa" opacity="0.06"/>
+
+      <!-- Street lamp right -->
+      <line x1="465" y1="260" x2="465" y2="180" stroke="#3a3a5a" stroke-width="4"/>
+      <path d="M465,185 Q465,170 445,170" stroke="#3a3a5a" stroke-width="3" fill="none"/>
+      <ellipse cx="444" cy="169" rx="8" ry="5" fill="#ffffcc" opacity="0.9"/>
+      <ellipse cx="444" cy="172" rx="15" ry="10" fill="#ffffaa" opacity="0.06"/>
+
+      <!-- Dumpster -->
+      <rect x="420" y="220" width="60" height="40" fill="#1a3a1a" stroke="#2a4a2a" stroke-width="2" rx="3"/>
+      <rect x="420" y="218" width="60" height="8" fill="#1a4a1a" stroke="#2a5a2a" stroke-width="1.5" rx="2"/>
+      <line x1="450" y1="218" x2="450" y2="260" stroke="#2a5a2a" stroke-width="1.5"/>
+
+      <!-- Trash bags -->
+      <ellipse cx="50" cy="265" rx="18" ry="14" fill="#1a1a2a" stroke="#2a2a3a" stroke-width="1.5"/>
+      <ellipse cx="70" cy="268" rx="14" ry="12" fill="#1a1a2a" stroke="#2a2a3a" stroke-width="1.5"/>
+
+      <!-- Cat on dumpster -->
+      <ellipse cx="448" cy="218" rx="10" ry="7" fill="#111" stroke="#222" stroke-width="1"/>
+      <polygon points="440,212 437,206 444,210" fill="#111" stroke="#222" stroke-width="1"/>
+      <polygon points="454,212 451,206 458,210" fill="#111" stroke="#222" stroke-width="1"/>
+      <circle cx="444" cy="217" r="1.5" fill="#ff9900" opacity="0.8"/>
+      <circle cx="452" cy="217" r="1.5" fill="#ff9900" opacity="0.8"/>
+      <path d="M448,220 Q453,218 460,221" stroke="#444" stroke-width="0.8" fill="none"/>
+
+      <!-- Bass waveform leaking under door -->
+      <g id="bassWave" opacity="0">
+        <path d="M220,265 Q230,258 240,265 Q250,272 260,265 Q270,258 280,265 Q290,272 300,265" stroke="#ff6bff" stroke-width="2" fill="none"/>
+      </g>
+
+    </svg><!-- end warehouse SVG -->
+
+  </div><!-- end warehouse-wrap -->
+
+  <p class="click-hint" id="clickHint">[ click the warehouse ]</p>
+
+</div><!-- end scene -->
+
+<!-- Music notes container -->
+<div id="notes"></div>
+
+<script>
+// ─── STARS ────────────────────────────────────────────────────────────────
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2.5 + 0.5;
+  s.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${Math.random()*100}%;
+    top:${Math.random()*70}%;
+    --d:${(Math.random()*2+1).toFixed(1)}s;
+    animation-delay:${(Math.random()*2).toFixed(1)}s;
+  `;
+  starsEl.appendChild(s);
+}
+
+// ─── AUDIO ENGINE ─────────────────────────────────────────────────────────
+// Two completely independent signal chains:
+//   OUTSIDE chain: instruments → outsideLPF (80Hz wall filter) → outsideGain → dest
+//   INSIDE  chain: instruments → insideGain → dest
+// We crossfade between outsideGain and insideGain. Nothing is shared.
+
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+// OUTSIDE: steep low-pass at 90Hz + resonance bump = thumping wall bass
+const outsideLPF = AC.createBiquadFilter();
+outsideLPF.type = 'lowpass';
+outsideLPF.frequency.value = 90;
+outsideLPF.Q.value = 6;          // resonant peak makes it "wub" not just dull
+const outsideGain = AC.createGain();
+outsideGain.gain.value = 0;
+outsideLPF.connect(outsideGain);
+outsideGain.connect(AC.destination);
+
+// INSIDE: clean master output
+const insideGain = AC.createGain();
+insideGain.gain.value = 0;
+insideGain.connect(AC.destination);
+
+// Instrument helpers — each takes an output node to connect to
+const BPM = 128, BEAT = 60/BPM, BAR = BEAT*4;
+let beatStarted = false, barCount = 0;
+
+function makeKick(time, out) {
+  const o = AC.createOscillator(), e = AC.createGain();
+  o.frequency.setValueAtTime(180, time);
+  o.frequency.exponentialRampToValueAtTime(35, time + 0.08);
+  e.gain.setValueAtTime(2.5, time);
+  e.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+  o.connect(e); e.connect(out);
+  o.start(time); o.stop(time + 0.45);
+}
+
+function makeSnare(time, out) {
+  // noise burst
+  const buf = AC.createBuffer(1, ~~(AC.sampleRate * 0.18), AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const bp  = AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900; bp.Q.value=0.7;
+  const e   = AC.createGain();
+  e.gain.setValueAtTime(0.55, time);
+  e.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+  src.connect(bp); bp.connect(e); e.connect(out);
+  src.start(time); src.stop(time + 0.2);
+  // tone body
+  const o = AC.createOscillator(), te = AC.createGain();
+  o.frequency.value = 195;
+  te.gain.setValueAtTime(0.25, time);
+  te.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+  o.connect(te); te.connect(out);
+  o.start(time); o.stop(time + 0.09);
+}
+
+function makeHat(time, out, vol, open) {
+  const len = open ? 0.13 : 0.035;
+  const buf = AC.createBuffer(1, ~~(AC.sampleRate*len), AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const hp  = AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=10000;
+  const e   = AC.createGain();
+  e.gain.setValueAtTime(vol, time);
+  e.gain.exponentialRampToValueAtTime(0.001, time+len);
+  src.connect(hp); hp.connect(e); e.connect(out);
+  src.start(time); src.stop(time+len+0.01);
+}
+
+function makeBass(time, freq, dur, out) {
+  const o1 = AC.createOscillator(), o2 = AC.createOscillator();
+  o1.type='sawtooth'; o1.frequency.value=freq;
+  o2.type='sine';     o2.frequency.value=freq*0.5;
+  const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=320; lp.Q.value=2;
+  const e  = AC.createGain();
+  e.gain.setValueAtTime(0.8, time);
+  e.gain.exponentialRampToValueAtTime(0.001, time+dur);
+  const sub = AC.createGain(); sub.gain.value=0.5;
+  o2.connect(sub); sub.connect(lp);
+  o1.connect(lp);  lp.connect(e);  e.connect(out);
+  o1.start(time); o1.stop(time+dur+0.02);
+  o2.start(time); o2.stop(time+dur+0.02);
+}
+
+function makeStab(time, freq, dur, out) {
+  const o1 = AC.createOscillator(), o2 = AC.createOscillator();
+  o1.type='sawtooth'; o1.frequency.value=freq;
+  o2.type='sawtooth'; o2.frequency.value=freq*1.013;
+  const lp = AC.createBiquadFilter(); lp.type='lowpass';
+  lp.frequency.setValueAtTime(2800, time);
+  lp.frequency.exponentialRampToValueAtTime(380, time+dur*0.5);
+  const e = AC.createGain();
+  e.gain.setValueAtTime(0.09, time);
+  e.gain.exponentialRampToValueAtTime(0.001, time+dur);
+  o1.connect(lp); o2.connect(lp); lp.connect(e); e.connect(out);
+  o1.start(time); o1.stop(time+dur+0.05);
+  o2.start(time); o2.stop(time+dur+0.05);
+}
+
+function makePad(time, freqs, dur, out) {
+  freqs.forEach(freq => {
+    const o = AC.createOscillator(); o.type='square'; o.frequency.value=freq;
+    const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=480;
+    const e = AC.createGain();
+    e.gain.setValueAtTime(0, time);
+    e.gain.linearRampToValueAtTime(0.055, time+0.4);
+    e.gain.setValueAtTime(0.055, time+dur-0.4);
+    e.gain.linearRampToValueAtTime(0, time+dur);
+    o.connect(lp); lp.connect(e); e.connect(out);
+    o.start(time); o.stop(time+dur+0.05);
+  });
+}
+
+const BASS_PATTERN = [[55,0.25],[55,0.25],[55,0.125],[55,0.125],[73.4,0.25],[55,0.25],[61.7,0.5]];
+const STAB_PATTERN = [[0,220,0.12],[0.5,220,0.12],[1,277.2,0.12],[1.5,220,0.12],[2,196,0.12],[2.5,220,0.12],[3,164.8,0.25],[3.75,220,0.12]];
+
+function scheduleBar(t) {
+  const b = barCount++;
+
+  // --- OUTSIDE BAR: only kick + bass routed through wall filter ---
+  for (let i=0;i<4;i++) makeKick(t + i*BEAT, outsideLPF);
+  let bt = t;
+  BASS_PATTERN.forEach(([f,d]) => { makeBass(bt, f, d*BAR*0.82, outsideLPF); bt += d*BAR; });
+
+  // --- INSIDE BAR: full track clean ---
+  for (let i=0;i<4;i++) makeKick(t + i*BEAT, insideGain);
+  bt = t;
+  BASS_PATTERN.forEach(([f,d]) => { makeBass(bt, f, d*BAR*0.82, insideGain); bt += d*BAR; });
+  // snare 2 & 4
+  makeSnare(t+BEAT,   insideGain);
+  makeSnare(t+BEAT*3, insideGain);
+  // 16th hi-hats
+  for (let i=0;i<16;i++) {
+    makeHat(t+i*BEAT*0.25, insideGain,
+      (i%4===0)?0.28:(i%2===0)?0.18:0.10,
+      i===6||i===14);
+  }
+  // stabs
+  STAB_PATTERN.forEach(([off,freq,dur]) => makeStab(t+off*BEAT, freq, dur*BEAT, insideGain));
+  // pad every 4 bars
+  if (b%4===0) makePad(t, [110,138.6,164.8,220], BAR*4, insideGain);
+
+  setTimeout(() => scheduleBar(t+BAR), (BAR-0.15)*1000);
+}
+
+function startBeat() {
+  if (!beatStarted) { beatStarted=true; scheduleBar(AC.currentTime+0.05); }
+}
+
+// Simple crossfade helpers
+function ramp(param, val, time) {
+  param.cancelScheduledValues(AC.currentTime);
+  param.setValueAtTime(param.value, AC.currentTime);
+  param.linearRampToValueAtTime(val, AC.currentTime + time);
+}
+
+function goOutside() { ramp(outsideGain.gain, 0.9, 1.2); ramp(insideGain.gain, 0, 0.3); }
+function goInside()  { ramp(outsideGain.gain, 0, 0.4);  ramp(insideGain.gain, 0.75, 0.5); }
+function goSilent()  { ramp(outsideGain.gain, 0, 1.0);  ramp(insideGain.gain, 0, 1.0); }
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let isOpen = false;
+const UNLOCK_DATE = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d;
+})();
+
+// ─── DOM REFS ─────────────────────────────────────────────────────────────
+const wrap       = document.getElementById('warehouseWrap');
+const headWrap   = document.getElementById('headWrap');
+const bubble     = document.getElementById('bubble');
+const countdownEl= document.getElementById('countdown');
+const svgEl      = document.getElementById('warehouseSvg');
+const clickHint  = document.getElementById('clickHint');
+const beams      = [
+  document.getElementById('b1'),
+  document.getElementById('b2'),
+  document.getElementById('b3'),
+  document.getElementById('b4')
+];
+const ventGlow   = document.getElementById('ventGlow');
+const bassWave   = document.getElementById('bassWave');
+
+// Position the head over the door using the SVG's rendered size
+// Door top-center is at SVG coords x=260, y=165 in a 520x320 viewBox
+function positionHead() {
+  const svgW = svgEl.clientWidth  || svgEl.offsetWidth  || 520;
+  const svgH = svgEl.clientHeight || svgEl.offsetHeight || 320;
+  const scaleX = svgW / 520;
+  const scaleY = svgH / 320;
+  // Center head horizontally over door, peek above door top
+  headWrap.style.position = 'absolute';
+  headWrap.style.left = (260 * scaleX) + 'px';
+  headWrap.style.top  = ((165 * scaleY) - 55) + 'px';
+  headWrap.style.transform = 'translateX(-50%)';
+}
+
+positionHead();
+window.addEventListener('resize', positionHead);
+// Re-run after fonts/images settle
+setTimeout(positionHead, 500);
+
+// ─── COUNTDOWN ────────────────────────────────────────────────────────────
+function updateCountdown() {
+  const now  = new Date();
+  const diff = UNLOCK_DATE - now;
+  if (diff <= 0) { countdownEl.textContent = 'NOW! 🎉'; return; }
+  const days = Math.floor(diff / 86400000);
+  const hrs  = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000)  / 60000);
+  const secs = Math.floor((diff % 60000)    / 1000);
+  countdownEl.textContent = `${days}d ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ─── FLOATING NOTES ───────────────────────────────────────────────────────
+const NOTE_CHARS = ['♪','♫','♬','♩','🎵'];
+let noteInterval = null;
+
+function spawnNote() {
+  const noteEl = document.createElement('div');
+  noteEl.className = 'note';
+  noteEl.textContent = NOTE_CHARS[Math.floor(Math.random() * NOTE_CHARS.length)];
+  // Use wrap's offset position — more reliable on Android than getBoundingClientRect on SVG
+  const wRect = wrap.getBoundingClientRect();
+  noteEl.style.left = (wRect.left + wRect.width * 0.35 + Math.random() * wRect.width * 0.3) + 'px';
+  noteEl.style.top  = (wRect.top  + wRect.height * 0.75 + window.scrollY) + 'px';
+  noteEl.style.color = Math.random() > 0.5 ? '#ff6bff' : '#00ffff';
+  noteEl.style.fontSize = (14 + Math.random() * 16) + 'px';
+  document.getElementById('notes').appendChild(noteEl);
+  requestAnimationFrame(() => noteEl.classList.add('active'));
+  setTimeout(() => noteEl.remove(), 3200);
+}
+
+// ─── QUIET AMBIENT (outside, before interaction) ──────────────────────────
+function startQuiet() {
+  if (AC.state === 'suspended') AC.resume();
+  startBeat();
+  goOutside();
+  if (!noteInterval) noteInterval = setInterval(spawnNote, 3000);
+  beams.forEach(b => b.classList.add('active'));
+  bassWave.style.opacity = '0.15';
+}
+
+// ─── OPEN / CLOSE ─────────────────────────────────────────────────────────
+function openWarehouse() {
+  if (isOpen) return;
+  isOpen = true;
+  if (AC.state === 'suspended') AC.resume();
+  startBeat();
+  goInside();
+  clearInterval(noteInterval);
+  noteInterval = setInterval(spawnNote, 500);
+  headWrap.classList.add('visible');
+  setTimeout(() => bubble.classList.add('visible'), 350);
+  svgEl.classList.add('rumbling');
+  setTimeout(() => svgEl.classList.remove('rumbling'), 800);
+  beams.forEach(b => { b.classList.add('active'); b.style.opacity = '0.38'; });
+  ventGlow.setAttribute('opacity', '0.22');
+  bassWave.style.opacity = '0.8';
+  clickHint.style.opacity = '0';
+}
+
+function closeWarehouse() {
+  if (!isOpen) return;
+  isOpen = false;
+  goOutside();
+  clearInterval(noteInterval);
+  noteInterval = setInterval(spawnNote, 3000);
+  headWrap.classList.remove('visible');
+  bubble.classList.remove('visible');
+  beams.forEach(b => { b.style.opacity = ''; });
+  ventGlow.setAttribute('opacity', '0');
+  bassWave.style.opacity = '0.15';
+  clickHint.style.opacity = '1';
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────
+function handleWarehouseTap(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (AC.state === 'suspended') AC.resume();
+  if (!beatStarted) startQuiet();
+  if (!isOpen) { openWarehouse(); }
+  else { closeWarehouse(); }
+}
+
+// Use both touchend and click; guard against double-fire
+let lastTap = 0;
+wrap.addEventListener('touchend', (e) => {
+  lastTap = Date.now();
+  handleWarehouseTap(e);
+}, { passive: false });
+wrap.addEventListener('click', (e) => {
+  if (Date.now() - lastTap < 500) return; // skip if touch just fired
+  handleWarehouseTap(e);
+});
+
+// Start quiet music on first any-interaction
+let quietStarted = false;
+function tryStartQuiet() {
+  if (!quietStarted) { quietStarted = true; startQuiet(); }
+}
+document.addEventListener('click', tryStartQuiet, { once: true });
+document.addEventListener('touchstart', tryStartQuiet, { once: true });
+
+// Subtle building rumble loop
+setInterval(() => {
+  if (isOpen) {
+    svgEl.style.transform = `translateX(${(Math.random()-0.5)*1.5}px)`;
+    setTimeout(() => svgEl.style.transform = '', 60);
+  }
+}, 120);
+</script>
+</body>
+</html>
