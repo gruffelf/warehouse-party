@@ -1,0 +1,81 @@
+<svg id="warehouseSvg" width="520" height="320" viewBox="0 0 520 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:block;touch-action:manipulation;">
+  <ellipse cx="260" cy="310" rx="200" ry="30" fill="#1a0030" opacity="0.8"/>
+  <polygon points="30,260 60,100 460,100 490,260" fill="#1e1e3a" stroke="#2a2a5a" stroke-width="2"/>
+  <polygon points="10,105 260,30 510,105" fill="#16162e" stroke="#2a2a5a" stroke-width="3"/>
+  <rect x="10" y="103" width="500" height="8" fill="#2a2a5a" rx="2"/>
+  <line x1="260" y1="30" x2="260" y2="108" stroke="#3a3a6a" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <line x1="155" y1="70" x2="155" y2="108" stroke="#3a3a6a" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="365" y1="70" x2="365" y2="108" stroke="#3a3a6a" stroke-width="1" stroke-dasharray="4,4"/>
+  <rect x="60" y="100" width="400" height="160" fill="#1c1c38" stroke="#2a2a5a" stroke-width="2"/>
+  <g stroke="#22224a" stroke-width="0.8" opacity="0.6">
+    <line x1="60" y1="115" x2="460" y2="115"/>
+    <line x1="60" y1="125" x2="460" y2="125"/>
+    <line x1="60" y1="135" x2="460" y2="135"/>
+    <line x1="60" y1="145" x2="460" y2="145"/>
+    <line x1="60" y1="155" x2="460" y2="155"/>
+    <line x1="60" y1="165" x2="460" y2="165"/>
+    <line x1="60" y1="175" x2="460" y2="175"/>
+    <line x1="60" y1="185" x2="460" y2="185"/>
+    <line x1="60" y1="195" x2="460" y2="195"/>
+    <line x1="60" y1="205" x2="460" y2="205"/>
+    <line x1="60" y1="215" x2="460" y2="215"/>
+    <line x1="60" y1="225" x2="460" y2="225"/>
+    <line x1="60" y1="235" x2="460" y2="235"/>
+    <line x1="60" y1="245" x2="460" y2="245"/>
+  </g>
+  <rect x="90" y="130" width="80" height="60" fill="#111128" stroke="#2a2a5a" stroke-width="2" rx="2"/>
+  <line x1="90" y1="130" x2="170" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+  <line x1="170" y1="130" x2="90" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+  <rect x="90" y="130" width="80" height="60" fill="#ff00ff" opacity="0.04" rx="2"/>
+  <ellipse cx="130" cy="160" rx="30" ry="22" fill="#ff00ff" opacity="0.03"/>
+  <rect x="350" y="130" width="80" height="60" fill="#111128" stroke="#2a2a5a" stroke-width="2" rx="2"/>
+  <line x1="350" y1="130" x2="430" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+  <line x1="430" y1="130" x2="350" y2="190" stroke="#2a2a5a" stroke-width="3"/>
+  <rect x="350" y="130" width="80" height="60" fill="#00ffff" opacity="0.03" rx="2"/>
+  <ellipse cx="390" cy="160" rx="30" ry="22" fill="#00ffff" opacity="0.03"/>
+  <rect x="210" y="165" width="100" height="95" fill="#111122" stroke="#2a2a5a" stroke-width="3" rx="3"/>
+  <rect x="215" y="170" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+  <rect x="263" y="170" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+  <rect x="215" y="215" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+  <rect x="263" y="215" width="42" height="40" fill="#0d0d22" stroke="#222244" stroke-width="1.5" rx="2"/>
+  <rect x="212" y="255" width="96" height="5" fill="#ff00ff" opacity="0.25" rx="1"/>
+  <ellipse cx="260" cy="260" rx="60" ry="8" fill="#ff00ff" opacity="0.08"/>
+  <circle cx="257" cy="213" r="3.5" fill="#444466" stroke="#666688" stroke-width="1"/>
+  <rect x="210" y="148" width="100" height="18" fill="#111" stroke="#333355" stroke-width="1.5" rx="3"/>
+  <text x="260" y="161" text-anchor="middle" fill="#666" font-family="monospace" font-size="10" letter-spacing="2">WAREHOUSE</text>
+  <text x="95" y="200" fill="#ff6bff" font-family="'Boogaloo', cursive" font-size="28" opacity="0.3" transform="rotate(-5,95,200)">47</text>
+  <path d="M380 200 Q390 195 400 200 Q410 205 420 200" stroke="#ff6bff" stroke-width="2" fill="none" opacity="0.25"/>
+  <text x="345" y="248" fill="#00ffff" font-family="monospace" font-size="9" opacity="0.3">NO TRESPASS</text>
+  <rect x="228" y="110" width="64" height="30" fill="#111128" stroke="#2a2a5a" stroke-width="1.5" rx="3"/>
+  <g stroke="#2a2a5a" stroke-width="1">
+    <line x1="237" y1="110" x2="237" y2="140"/>
+    <line x1="246" y1="110" x2="246" y2="140"/>
+    <line x1="255" y1="110" x2="255" y2="140"/>
+    <line x1="264" y1="110" x2="264" y2="140"/>
+    <line x1="273" y1="110" x2="273" y2="140"/>
+    <line x1="282" y1="110" x2="282" y2="140"/>
+  </g>
+  <rect x="228" y="110" width="64" height="30" fill="#ff00ff" opacity="0" rx="3" id="ventGlow"/>
+  <line x1="55" y1="260" x2="55" y2="180" stroke="#3a3a5a" stroke-width="4"/>
+  <path d="M55,185 Q55,170 75,170" stroke="#3a3a5a" stroke-width="3" fill="none"/>
+  <ellipse cx="76" cy="169" rx="8" ry="5" fill="#ffffcc" opacity="0.9"/>
+  <ellipse cx="76" cy="172" rx="15" ry="10" fill="#ffffaa" opacity="0.06"/>
+  <line x1="465" y1="260" x2="465" y2="180" stroke="#3a3a5a" stroke-width="4"/>
+  <path d="M465,185 Q465,170 445,170" stroke="#3a3a5a" stroke-width="3" fill="none"/>
+  <ellipse cx="444" cy="169" rx="8" ry="5" fill="#ffffcc" opacity="0.9"/>
+  <ellipse cx="444" cy="172" rx="15" ry="10" fill="#ffffaa" opacity="0.06"/>
+  <rect x="420" y="220" width="60" height="40" fill="#1a3a1a" stroke="#2a4a2a" stroke-width="2" rx="3"/>
+  <rect x="420" y="218" width="60" height="8" fill="#1a4a1a" stroke="#2a5a2a" stroke-width="1.5" rx="2"/>
+  <line x1="450" y1="218" x2="450" y2="260" stroke="#2a5a2a" stroke-width="1.5"/>
+  <ellipse cx="50" cy="265" rx="18" ry="14" fill="#1a1a2a" stroke="#2a2a3a" stroke-width="1.5"/>
+  <ellipse cx="70" cy="268" rx="14" ry="12" fill="#1a1a2a" stroke="#2a2a3a" stroke-width="1.5"/>
+  <ellipse cx="448" cy="218" rx="10" ry="7" fill="#111" stroke="#222" stroke-width="1"/>
+  <polygon points="440,212 437,206 444,210" fill="#111" stroke="#222" stroke-width="1"/>
+  <polygon points="454,212 451,206 458,210" fill="#111" stroke="#222" stroke-width="1"/>
+  <circle cx="444" cy="217" r="1.5" fill="#ff9900" opacity="0.8"/>
+  <circle cx="452" cy="217" r="1.5" fill="#ff9900" opacity="0.8"/>
+  <path d="M448,220 Q453,218 460,221" stroke="#444" stroke-width="0.8" fill="none"/>
+  <g id="bassWave" opacity="0">
+    <path d="M220,265 Q230,258 240,265 Q250,272 260,265 Q270,258 280,265 Q290,272 300,265" stroke="#ff6bff" stroke-width="2" fill="none"/>
+  </g>
+</svg>
