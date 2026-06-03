@@ -95,11 +95,14 @@
   }
 
   .subtitle {
-    font-size: clamp(14px, 2.5vw, 22px);
-    color: #888;
+    font-size: clamp(20px, 2.5vw, 28px);
+    color: #00ffff;
     letter-spacing: 3px;
     margin-bottom: 30px;
     text-align: center;
+    text-shadow:
+      0 0 8px rgba(0, 255, 255, 0.9),
+      0 0 24px rgba(0, 255, 255, 0.4);
   }
 
   @keyframes pulse {
@@ -139,11 +142,14 @@
 
   .click-hint {
     text-align: center;
-    color: #555;
+    color: #00ffff;
     font-size: 32px;
     letter-spacing: 2px;
     margin-top: 10px;
-    animation: blink 2.5s step-end infinite;
+    animation: blink 1.5s step-end infinite;
+    text-shadow:
+      0 0 8px rgba(0, 255, 255, 0.9),
+      0 0 24px rgba(0, 255, 255, 0.4);
   }
 
   @keyframes blink {
@@ -434,7 +440,7 @@ function updateCountdown() {
 }
 
 const pad = n => String(n).padStart(2, '0');
-const countdownInterval = setInterval(updateCountdown, 1000);
+let countdownInterval = setInterval(updateCountdown, 1000);
 updateCountdown(); // run immediately so there's no 1s blank
 
 
