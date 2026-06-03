@@ -550,8 +550,7 @@ function openWarehouse() {
   if (isOpen) return;
   isOpen = true;
 
-  soundInside();
-  setNoteRate(NOTES_OPEN_MS);
+  soundInside();  
 
   // Show the peeking head + speech bubble
   headWrap.classList.add('visible');
@@ -571,8 +570,7 @@ function closeWarehouse() {
   if (!isOpen) return;
   isOpen = false;
 
-  soundOutside();
-  setNoteRate(NOTES_CLOSED_MS);
+  soundOutside();  
 
   // Hide head + bubble
   headWrap.classList.remove('visible');
