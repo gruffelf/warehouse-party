@@ -270,10 +270,80 @@
       scroll-behavior: auto !important;
     }
   }
+
+  #gate {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.6s ease;
+
+  /* scanline texture overlay */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.018) 2px,
+    rgba(255, 255, 255, 0.018) 4px
+  );
+}
+
+#gate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a001a 0%, #000 70%);
+  z-index: -1;
+}
+
+/* pulsing glow ring behind the text */
+#gate::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(180, 0, 255, 0.12) 0%, transparent 70%);
+  animation: gateBreath 2.4s ease-in-out infinite;
+}
+
+#gate span {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+
+  /* flicker animation */
+  animation: gateFlicker 3.5s step-end infinite;
+
+  /* magenta text glow */
+  text-shadow:
+    0 0 8px rgba(255, 80, 255, 0.9),
+    0 0 24px rgba(255, 80, 255, 0.5),
+    0 0 60px rgba(180, 0, 255, 0.3);
+}
+
+@keyframes gateFlicker {
+  0%, 89%, 91%, 93%, 100% { opacity: 1; }
+  90%, 92%                 { opacity: 0.15; }
+}
+
+@keyframes gateBreath {
+  0%, 100% { transform: scale(1);    opacity: 0.7; }
+  50%       { transform: scale(1.15); opacity: 1;   }
+}
 </style>
 </head>
 <body>
-
+<div id="gate"><span>tap to enter</span></div>
 <div class="beam" id="b1"></div>
 <div class="beam" id="b2"></div>
 <div class="beam" id="b3"></div>
@@ -525,6 +595,18 @@ function positionHead() {
   headWrap.style.top  = `${165 * scaleY - 55}px`;
 }
 
+const gate = document.getElementById('gate');
+
+gate.addEventListener('click', async () => {
+  gate.style.opacity = '0';
+  setTimeout(() => gate.remove(), 600);
+  
+  await startPlayback();
+  soundOutside();
+  setNoteRate(NOTES_CLOSED_MS);
+  beams.forEach(b => b.classList.add('active'));
+  if (bassWave) bassWave.style.opacity = '0.15';
+}, { once: true });
 
 // ================================
 // OPEN / CLOSE
@@ -581,19 +663,6 @@ wrap.addEventListener('click', () => {
   if (isOpen) closeWarehouse();
   else openWarehouse();
 });
-
-// First interaction starts audio (outside/muffled state) and slow notes
-document.addEventListener('pointerdown', async () => {
-  await startPlayback();
-  
-  // Don't override the sound state if the warehouse was just opened by this same click
-  if (!isOpen) {
-    soundOutside();
-    setNoteRate(NOTES_CLOSED_MS);
-    beams.forEach(b => b.classList.add('active'));
-    if (bassWave) bassWave.style.opacity = '0.15';
-  }
-}, { once: true });
 
 warehouseObj.addEventListener('load', onWarehouseLoaded);
 window.addEventListener('resize', positionHead);
