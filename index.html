@@ -585,10 +585,14 @@ wrap.addEventListener('click', () => {
 // First interaction starts audio (outside/muffled state) and slow notes
 document.addEventListener('pointerdown', async () => {
   await startPlayback();
-  soundOutside();
-  setNoteRate(NOTES_CLOSED_MS);
-  beams.forEach(b => b.classList.add('active'));
-  if (bassWave) bassWave.style.opacity = '0.15';
+  
+  // Don't override the sound state if the warehouse was just opened by this same click
+  if (!isOpen) {
+    soundOutside();
+    setNoteRate(NOTES_CLOSED_MS);
+    beams.forEach(b => b.classList.add('active'));
+    if (bassWave) bassWave.style.opacity = '0.15';
+  }
 }, { once: true });
 
 warehouseObj.addEventListener('load', onWarehouseLoaded);
