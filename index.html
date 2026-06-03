@@ -538,7 +538,6 @@ gate.addEventListener('click', async () => {
   
   await startPlayback();
   soundOutside();
-  setNoteRate(NOTES_CLOSED_MS);
   beams.forEach(b => b.classList.add('active'));
   if (bassWave) bassWave.style.opacity = '0.15';
 }, { once: true });
