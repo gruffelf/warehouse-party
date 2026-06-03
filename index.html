@@ -237,24 +237,6 @@
   @keyframes swing2 { 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-30deg)} }
   @keyframes swing3 { 0%,100%{transform:rotate(-15deg)} 50%{transform:rotate(35deg)} }
 
-  .note {
-    position: fixed;
-    pointer-events: none;
-    z-index: 3;
-    opacity: 0;
-    color: #ff6bff;
-    will-change: transform, opacity;
-  }
-
-  .note.active {
-    animation: floatNote 3s ease-out forwards;
-  }
-
-  @keyframes floatNote {
-    0% { opacity: 0.9; transform: translateY(0) rotate(0deg); }
-    100% { opacity: 0; transform: translateY(-120px) rotate(30deg); }
-  }
-
   @keyframes rumble {
     0%,100% { transform: translateX(0); }
     25% { transform: translateX(-2px) rotate(-0.5deg); }
@@ -399,8 +381,6 @@
 
   <p class="click-hint" id="clickHint">click the warehouse to find out more</p>
 </main>
-
-<div id="notes" aria-hidden="true"></div>
 <script>
 // ================================
 // CONFIG — tweak these values
@@ -412,10 +392,6 @@ const LOCATION_TEXT = "LOCATION GOES HERE";
 const VOLUME_OUTSIDE = 0.9;  // muffled low-pass version heard outside
 const VOLUME_INSIDE  = 0.75; // full sound heard inside
 
-// How often music notes spawn (ms)
-const NOTES_CLOSED_MS = 3000;
-const NOTES_OPEN_MS   = 500;
-
 
 // ================================
 // DOM REFS
@@ -425,7 +401,6 @@ const headWrap     = document.getElementById('headWrap');
 const bubble       = document.getElementById('bubble');
 const countdownEl  = document.getElementById('countdown');
 const clickHint    = document.getElementById('clickHint');
-const notesEl      = document.getElementById('notes');
 const warehouseObj = document.getElementById('warehouseObject');
 const beams        = ['b1','b2','b3','b4'].map(id => document.getElementById(id));
 
@@ -532,46 +507,6 @@ function soundInside() {
   ramp(audio.outsideGain, 0,             0.4);
   ramp(audio.insideGain,  VOLUME_INSIDE, 0.5);
 }
-
-
-// ================================
-// MUSIC NOTES
-// Floating note emojis that drift up from the warehouse.
-// Uses a fixed pool of DOM elements to avoid thrashing.
-// ================================
-const NOTE_CHARS = ['♪','♫','♬','♩','🎵'];
-const notePool   = Array.from({ length: 18 }, () => {
-  const el = document.createElement('div');
-  el.className = 'note';
-  notesEl.appendChild(el);
-  return el;
-});
-let noteIndex    = 0;
-let noteInterval = null;
-
-function spawnNote() {
-  const el = notePool[noteIndex];
-  noteIndex = (noteIndex + 1) % notePool.length;
-
-  el.classList.remove('active');
-  el.textContent = NOTE_CHARS[Math.floor(Math.random() * NOTE_CHARS.length)];
-
-  // Scatter notes across the middle third of the warehouse
-  const r = wrap.getBoundingClientRect();
-  el.style.left     = `${r.left + r.width * 0.35 + Math.random() * r.width * 0.3}px`;
-  el.style.top      = `${r.top  + r.height * 0.75 + window.scrollY}px`;
-  el.style.color    = Math.random() > 0.5 ? '#ff6bff' : '#00ffff';
-  el.style.fontSize = `${14 + Math.random() * 16}px`;
-
-  requestAnimationFrame(() => el.classList.add('active'));
-  setTimeout(() => el.classList.remove('active'), 3200);
-}
-
-function setNoteRate(ms) {
-  clearInterval(noteInterval);
-  noteInterval = setInterval(spawnNote, ms);
-}
-
 
 // ================================
 // WAREHOUSE SVG REFS
