@@ -270,10 +270,80 @@
       scroll-behavior: auto !important;
     }
   }
+
+  #gate {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.6s ease;
+
+  /* scanline texture overlay */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.018) 2px,
+    rgba(255, 255, 255, 0.018) 4px
+  );
+}
+
+#gate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a001a 0%, #000 70%);
+  z-index: -1;
+}
+
+/* pulsing glow ring behind the text */
+#gate::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(180, 0, 255, 0.12) 0%, transparent 70%);
+  animation: gateBreath 2.4s ease-in-out infinite;
+}
+
+#gate span {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+
+  /* flicker animation */
+  animation: gateFlicker 3.5s step-end infinite;
+
+  /* magenta text glow */
+  text-shadow:
+    0 0 8px rgba(255, 80, 255, 0.9),
+    0 0 24px rgba(255, 80, 255, 0.5),
+    0 0 60px rgba(180, 0, 255, 0.3);
+}
+
+@keyframes gateFlicker {
+  0%, 89%, 91%, 93%, 100% { opacity: 1; }
+  90%, 92%                 { opacity: 0.15; }
+}
+
+@keyframes gateBreath {
+  0%, 100% { transform: scale(1);    opacity: 0.7; }
+  50%       { transform: scale(1.15); opacity: 1;   }
+}
 </style>
 </head>
 <body>
-
+<div id="gate"><span>tap to enter</span></div>
 <div class="beam" id="b1"></div>
 <div class="beam" id="b2"></div>
 <div class="beam" id="b3"></div>
@@ -331,399 +401,283 @@
 </main>
 
 <div id="notes" aria-hidden="true"></div>
-
 <script>
-const CONFIG = {
-  
-  svg: {
-    width: 520,
-    height: 320,
-    doorCenterX: 260,
-    doorTopY: 165,
-    headOffsetY: 55
-  },
-  notes: {
-    chars: ['♪', '♫', '♬', '♩', '🎵'],
-    poolSize: 18,
-    closeIntervalMs: 3000,
-    openIntervalMs: 500,
-    hideAfterMs: 3200,
-    baseSize: 14,
-    sizeVariance: 16
-  },
-  effects: {
-    bubbleDelayMs: 350,
-    rumbleStopMs: 800,
-    rumbleLoopMs: 120,
-    initialPositionDelayMs: 500
-  },
-  audio: {
-    lowPassHz: 140,
-    lowPassQ: 1,
-    outsideLevel: 0.9,
-    insideLevel: 0.75
-  }
-};
-
-let isOpen = false;
-
-// =====================
-// EDIT THESE
-// =====================
+// ================================
+// CONFIG — tweak these values
+// ================================
 const REVEAL_DATE = new Date("2026-12-31T20:00:00");
 const LOCATION_TEXT = "LOCATION GOES HERE";
-// =====================
 
-const wrap = document.getElementById('warehouseWrap');
-const headWrap = document.getElementById('headWrap');
-const bubble = document.getElementById('bubble');
-const countdownEl = document.getElementById('countdown');
-const clickHint = document.getElementById('clickHint');
-const notesEl = document.getElementById('notes');
-const warehouseObject = document.getElementById('warehouseObject');
-const beams = [
-  document.getElementById('b1'),
-  document.getElementById('b2'),
-  document.getElementById('b3'),
-  document.getElementById('b4')
-];
+// Audio: how loud each state is (0–1)
+const VOLUME_OUTSIDE = 0.9;  // muffled low-pass version heard outside
+const VOLUME_INSIDE  = 0.75; // full sound heard inside
 
-let warehouseSvgEl = null;
+// How often music notes spawn (ms)
+const NOTES_CLOSED_MS = 3000;
+const NOTES_OPEN_MS   = 500;
+
+
+// ================================
+// DOM REFS
+// ================================
+const wrap         = document.getElementById('warehouseWrap');
+const headWrap     = document.getElementById('headWrap');
+const bubble       = document.getElementById('bubble');
+const countdownEl  = document.getElementById('countdown');
+const clickHint    = document.getElementById('clickHint');
+const notesEl      = document.getElementById('notes');
+const warehouseObj = document.getElementById('warehouseObject');
+const beams        = ['b1','b2','b3','b4'].map(id => document.getElementById(id));
+
+// SVG elements inside the <object> tag — populated once it loads
+let svgEl    = null;
 let ventGlow = null;
 let bassWave = null;
 
-let noteInterval = null;
-let countdownInterval = null;
-let rumbleInterval = null;
-let notePool = [];
-let notePoolIndex = 0;
-const noteHideTimers = new WeakMap();
+let isOpen = false;
 
-const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-let audioErrorShown = false;
-let audioEngine = null;
 
-function showAudioErrorOnce(message) {
-  if (audioErrorShown) return;
-  audioErrorShown = true;
-  console.warn(message);
-  clickHint.textContent = '[ visual mode: audio unavailable ]';
-  clickHint.style.opacity = '1';
-}
-
-function initAudioEngine() {
-  if (audioEngine) return audioEngine;
-
-  if (!AudioContextCtor) {
-    showAudioErrorOnce('AudioContext is not supported in this browser.');
-    audioEngine = { enabled: false };
-    return audioEngine;
-  }
-
-  try {
-    const context = new AudioContextCtor();
-    const track = new Audio('music.mp3');
-    track.loop = true;
-    track.preload = 'auto';
-
-    const source = context.createMediaElementSource(track);
-    const outsideLPF = context.createBiquadFilter();
-    outsideLPF.type = 'lowpass';
-    outsideLPF.frequency.value = CONFIG.audio.lowPassHz;
-    outsideLPF.Q.value = CONFIG.audio.lowPassQ;
-
-    const outsideGain = context.createGain();
-    const insideGain = context.createGain();
-    outsideGain.gain.value = 0;
-    insideGain.gain.value = 0;
-
-    source.connect(outsideLPF);
-    outsideLPF.connect(outsideGain);
-    source.connect(insideGain);
-    outsideGain.connect(context.destination);
-    insideGain.connect(context.destination);
-
-    track.addEventListener('error', () => {
-      showAudioErrorOnce('music.mp3 could not be loaded. Check file path or network access.');
-    });
-
-    audioEngine = {
-      enabled: true,
-      context,
-      track,
-      source,
-      outsideLPF,
-      outsideGain,
-      insideGain
-    };
-  } catch (error) {
-    showAudioErrorOnce('Unable to initialize audio engine.');
-    audioEngine = { enabled: false };
-  }
-
-  return audioEngine;
-}
-
-async function ensureAudioPlaying() {
-  const audio = initAudioEngine();
-  if (!audio.enabled) return;
-
-  try {
-    if (audio.context.state === 'suspended') {
-      await audio.context.resume();
-    }
-    if (audio.track.paused) {
-      await audio.track.play();
-    }
-  } catch (error) {
-    console.warn('Audio playback error:', error);
-    showAudioErrorOnce('Audio playback was blocked.');
-  }
-}
-
-function ramp(param, value, seconds) {
-  const audio = initAudioEngine();
-  if (!audio.enabled) return;
-  const now = audio.context.currentTime;
-  param.cancelScheduledValues(now);
-  param.setValueAtTime(param.value, now);
-  param.linearRampToValueAtTime(value, now + seconds);
-}
-
-function goOutside() {
-  const audio = initAudioEngine();
-  if (!audio.enabled) return;
-  ramp(audio.outsideGain.gain, CONFIG.audio.outsideLevel, 1.2);
-  ramp(audio.insideGain.gain, 0, 0.3);
-}
-
-function goInside() {
-  const audio = initAudioEngine();
-  if (!audio.enabled) return;
-  ramp(audio.outsideGain.gain, 0, 0.4);
-  ramp(audio.insideGain.gain, CONFIG.audio.insideLevel, 0.5);
-}
-
+// ================================
+// COUNTDOWN
+// Updates the timer text every second.
+// Once the reveal date passes, shows the location instead.
+// ================================
 function updateCountdown() {
-  const now = new Date();
-  const diff = REVEAL_DATE - now;
+  const diff = REVEAL_DATE - new Date();
+
   if (diff <= 0) {
     bubble.innerHTML = `<strong>📍 Location:</strong><br><br>${LOCATION_TEXT}`;
     clearInterval(countdownInterval);
     return;
   }
-  const days = Math.floor(diff / 86400000);
-  const hrs = Math.floor((diff % 86400000) / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
-  const secs = Math.floor((diff % 60000) / 1000);
-  countdownEl.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+  const d  = Math.floor(diff / 86400000);
+  const h  = Math.floor((diff % 86400000) / 3600000);
+  const m  = Math.floor((diff % 3600000)  / 60000);
+  const s  = Math.floor((diff % 60000)    / 1000);
+  countdownEl.textContent = `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-function initWarehouseRefs() {
-  const doc = warehouseObject.contentDocument;
+const pad = n => String(n).padStart(2, '0');
+const countdownInterval = setInterval(updateCountdown, 1000);
+updateCountdown(); // run immediately so there's no 1s blank
+
+
+// ================================
+// AUDIO ENGINE
+// Sets up Web Audio so we can route the track through two paths:
+//   - outsideGain: signal passes through a low-pass filter (muffled bass)
+//   - insideGain:  signal goes direct (full sound)
+// We crossfade between them on open/close.
+//
+// NOTE: browsers block autoplay until the user interacts.
+// We hook into the first click to start playback.
+// ================================
+let audio = null; // holds all audio nodes once initialised
+
+function initAudio() {
+  if (audio) return; // already set up
+
+  const ctx   = new (window.AudioContext || window.webkitAudioContext)();
+  const track = new Audio('music.mp3');
+  track.loop = true;
+
+  const source = ctx.createMediaElementSource(track);
+
+  // Low-pass filter — lets bass through, cuts highs (sounds like outside a club)
+  const lpf = ctx.createBiquadFilter();
+  lpf.type            = 'lowpass';
+  lpf.frequency.value = 140;
+  lpf.Q.value         = 1;
+
+  const outsideGain = ctx.createGain();
+  const insideGain  = ctx.createGain();
+  outsideGain.gain.value = 0;
+  insideGain.gain.value  = 0;
+
+  // Routing: source → lpf → outsideGain → speakers
+  //          source ──────→ insideGain  → speakers
+  source.connect(lpf);
+  lpf.connect(outsideGain);
+  source.connect(insideGain);
+  outsideGain.connect(ctx.destination);
+  insideGain.connect(ctx.destination);
+
+  audio = { ctx, track, outsideGain, insideGain };
+}
+
+// Smoothly ramp a gain value over `secs` seconds
+function ramp(gainNode, target, secs) {
+  const now = audio.ctx.currentTime;
+  gainNode.gain.cancelScheduledValues(now);
+  gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+  gainNode.gain.linearRampToValueAtTime(target, now + secs);
+}
+
+// Resume context + start track (handles browser autoplay restrictions)
+async function startPlayback() {
+  initAudio();
+  if (audio.ctx.state === 'suspended') await audio.ctx.resume();
+  if (audio.track.paused) await audio.track.play().catch(() => {});
+}
+
+function soundOutside() {
+  // Fade in muffled (low-pass) signal, fade out direct
+  ramp(audio.outsideGain, VOLUME_OUTSIDE, 1.2);
+  ramp(audio.insideGain,  0,              0.3);
+}
+
+function soundInside() {
+  // Fade out muffled, fade in direct full sound
+  ramp(audio.outsideGain, 0,             0.4);
+  ramp(audio.insideGain,  VOLUME_INSIDE, 0.5);
+}
+
+
+// ================================
+// MUSIC NOTES
+// Floating note emojis that drift up from the warehouse.
+// Uses a fixed pool of DOM elements to avoid thrashing.
+// ================================
+const NOTE_CHARS = ['♪','♫','♬','♩','🎵'];
+const notePool   = Array.from({ length: 18 }, () => {
+  const el = document.createElement('div');
+  el.className = 'note';
+  notesEl.appendChild(el);
+  return el;
+});
+let noteIndex    = 0;
+let noteInterval = null;
+
+function spawnNote() {
+  const el = notePool[noteIndex];
+  noteIndex = (noteIndex + 1) % notePool.length;
+
+  el.classList.remove('active');
+  el.textContent = NOTE_CHARS[Math.floor(Math.random() * NOTE_CHARS.length)];
+
+  // Scatter notes across the middle third of the warehouse
+  const r = wrap.getBoundingClientRect();
+  el.style.left     = `${r.left + r.width * 0.35 + Math.random() * r.width * 0.3}px`;
+  el.style.top      = `${r.top  + r.height * 0.75 + window.scrollY}px`;
+  el.style.color    = Math.random() > 0.5 ? '#ff6bff' : '#00ffff';
+  el.style.fontSize = `${14 + Math.random() * 16}px`;
+
+  requestAnimationFrame(() => el.classList.add('active'));
+  setTimeout(() => el.classList.remove('active'), 3200);
+}
+
+function setNoteRate(ms) {
+  clearInterval(noteInterval);
+  noteInterval = setInterval(spawnNote, ms);
+}
+
+
+// ================================
+// WAREHOUSE SVG REFS
+// The warehouse graphic is an <object> tag; we grab its internals
+// after it finishes loading so we can animate elements inside it.
+// ================================
+function onWarehouseLoaded() {
+  const doc = warehouseObj.contentDocument;
   if (!doc) return;
-  warehouseSvgEl = doc.getElementById('warehouseSvg');
+  svgEl    = doc.getElementById('warehouseSvg');
   ventGlow = doc.getElementById('ventGlow');
   bassWave = doc.getElementById('bassWave');
   positionHead();
 }
 
+// Keep the peeking head aligned with the door as the window resizes
 function positionHead() {
-  const svgW = warehouseObject.clientWidth || CONFIG.svg.width;
-  const svgH = warehouseObject.clientHeight || CONFIG.svg.height;
-  const scaleX = svgW / CONFIG.svg.width;
-  const scaleY = svgH / CONFIG.svg.height;
-  headWrap.style.left = `${CONFIG.svg.doorCenterX * scaleX}px`;
-  headWrap.style.top = `${(CONFIG.svg.doorTopY * scaleY) - CONFIG.svg.headOffsetY}px`;
+  const scaleX = warehouseObj.clientWidth  / 520;
+  const scaleY = warehouseObj.clientHeight / 320;
+  headWrap.style.left = `${260 * scaleX}px`;
+  headWrap.style.top  = `${165 * scaleY - 55}px`;
 }
 
-function createNotePool() {
-  notePool = Array.from({ length: CONFIG.notes.poolSize }, () => {
-    const noteEl = document.createElement('div');
-    noteEl.className = 'note';
-    notesEl.appendChild(noteEl);
-    return noteEl;
-  });
-}
+const gate = document.getElementById('gate');
 
-function spawnNote() {
-  if (!notePool.length) return;
-
-  const noteEl = notePool[notePoolIndex];
-  notePoolIndex = (notePoolIndex + 1) % notePool.length;
-
-  const existingTimer = noteHideTimers.get(noteEl);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
-    noteHideTimers.delete(noteEl);
-  }
-
-  noteEl.classList.remove('active');
-  noteEl.textContent = CONFIG.notes.chars[Math.floor(Math.random() * CONFIG.notes.chars.length)];
-  const wRect = wrap.getBoundingClientRect();
-  noteEl.style.left = `${wRect.left + wRect.width * 0.35 + Math.random() * wRect.width * 0.3}px`;
-  noteEl.style.top = `${wRect.top + wRect.height * 0.75 + window.scrollY}px`;
-  noteEl.style.color = Math.random() > 0.5 ? '#ff6bff' : '#00ffff';
-  noteEl.style.fontSize = `${CONFIG.notes.baseSize + Math.random() * CONFIG.notes.sizeVariance}px`;
-
-  requestAnimationFrame(() => noteEl.classList.add('active'));
-  const hideTimer = setTimeout(() => {
-    noteEl.classList.remove('active');
-    noteHideTimers.delete(noteEl);
-  }, CONFIG.notes.hideAfterMs);
-  noteHideTimers.set(noteEl, hideTimer);
-}
-
-function setNotesInterval(ms) {
-  if (noteInterval) clearInterval(noteInterval);
-  noteInterval = setInterval(spawnNote, ms);
-}
-
-function startQuiet() {
-  ensureAudioPlaying();
-  goOutside();
-  setNotesInterval(CONFIG.notes.closeIntervalMs);
-  beams.forEach((beam) => beam.classList.add('active'));
+gate.addEventListener('click', async () => {
+  gate.style.opacity = '0';
+  setTimeout(() => gate.remove(), 600);
+  
+  await startPlayback();
+  soundOutside();
+  setNoteRate(NOTES_CLOSED_MS);
+  beams.forEach(b => b.classList.add('active'));
   if (bassWave) bassWave.style.opacity = '0.15';
-}
+}, { once: true });
 
+// ================================
+// OPEN / CLOSE
+// ================================
 function openWarehouse() {
   if (isOpen) return;
   isOpen = true;
-  wrap.setAttribute('aria-expanded', 'true');
-  wrap.setAttribute('aria-label', 'Close warehouse party mode');
 
-  ensureAudioPlaying();
-  goInside();
-  setNotesInterval(CONFIG.notes.openIntervalMs);
+  soundInside();
+  setNoteRate(NOTES_OPEN_MS);
 
+  // Show the peeking head + speech bubble
   headWrap.classList.add('visible');
-  setTimeout(() => bubble.classList.add('visible'), CONFIG.effects.bubbleDelayMs);
+  setTimeout(() => bubble.classList.add('visible'), 350);
 
-  if (warehouseSvgEl) {
-    warehouseSvgEl.classList.add('rumbling');
-    setTimeout(() => {
-      if (warehouseSvgEl) warehouseSvgEl.classList.remove('rumbling');
-    }, CONFIG.effects.rumbleStopMs);
-  }
+  // Brighten light beams
+  beams.forEach(b => { b.classList.add('active'); b.style.opacity = '0.38'; });
 
-  beams.forEach((beam) => {
-    beam.classList.add('active');
-    beam.style.opacity = '0.38';
-  });
-
+  // SVG glow effects
   if (ventGlow) ventGlow.setAttribute('opacity', '0.22');
   if (bassWave) bassWave.style.opacity = '0.8';
+
   clickHint.style.opacity = '0';
 }
 
 function closeWarehouse() {
   if (!isOpen) return;
   isOpen = false;
-  wrap.setAttribute('aria-expanded', 'false');
-  wrap.setAttribute('aria-label', 'Open warehouse party mode');
 
-  goOutside();
-  setNotesInterval(CONFIG.notes.closeIntervalMs);
+  soundOutside();
+  setNoteRate(NOTES_CLOSED_MS);
 
+  // Hide head + bubble
   headWrap.classList.remove('visible');
   bubble.classList.remove('visible');
 
-  beams.forEach((beam) => {
-    beam.style.opacity = '';
-  });
+  // Reset beam brightness
+  beams.forEach(b => b.style.opacity = '');
 
+  // Dim SVG glow effects
   if (ventGlow) ventGlow.setAttribute('opacity', '0');
   if (bassWave) bassWave.style.opacity = '0.15';
+
   clickHint.style.opacity = '1';
 }
 
-function handleWarehouseToggle(event) {
-  event.preventDefault();
+
+// ================================
+// EVENTS
+// ================================
+
+// Toggle open/closed on click
+wrap.addEventListener('click', () => {
   if (isOpen) closeWarehouse();
   else openWarehouse();
-}
+});
 
-function handleWrapClick(event) {
-  handleWarehouseToggle(event);
-}
-
-function handleWrapKeyDown(event) {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    handleWarehouseToggle(event);
-  }
-}
-
-async function handleFirstInteraction() {
-  await ensureAudioPlaying();
-  goOutside();
-}
-
-function cleanupAudio() {
-  const audio = audioEngine;
-  if (!audio || !audio.enabled) return;
-
-  audio.track.pause();
-  audio.track.src = '';
-  audio.track.load();
-
-  audio.source.disconnect();
-  audio.outsideLPF.disconnect();
-  audio.outsideGain.disconnect();
-  audio.insideGain.disconnect();
-  audio.context.close().catch((error) => {
-    console.warn('AudioContext close failed:', error);
-  });
-  audioEngine = null;
-}
-
-function cleanup() {
-  window.removeEventListener('resize', positionHead);
-  document.removeEventListener('pointerdown', handleFirstInteraction);
-  document.removeEventListener('keydown', handleFirstInteraction);
-  wrap.removeEventListener('click', handleWrapClick);
-  wrap.removeEventListener('keydown', handleWrapKeyDown);
-  warehouseObject.removeEventListener('load', initWarehouseRefs);
-
-  if (countdownInterval) clearInterval(countdownInterval);
-  if (noteInterval) clearInterval(noteInterval);
-  if (rumbleInterval) clearInterval(rumbleInterval);
-
-  notePool.forEach((note) => {
-    const timer = noteHideTimers.get(note);
-    if (timer) {
-      clearTimeout(timer);
-      noteHideTimers.delete(note);
-    }
-  });
-
-  cleanupAudio();
-}
-
-createNotePool();
-updateCountdown();
-countdownInterval = setInterval(updateCountdown, 1000);
-
-warehouseObject.addEventListener('load', initWarehouseRefs);
+warehouseObj.addEventListener('load', onWarehouseLoaded);
 window.addEventListener('resize', positionHead);
-setTimeout(positionHead, CONFIG.effects.initialPositionDelayMs);
+setTimeout(positionHead, 500); // fallback in case load already fired
 
-wrap.addEventListener('click', handleWrapClick);
-wrap.addEventListener('keydown', handleWrapKeyDown);
 
-document.addEventListener('pointerdown', handleFirstInteraction, { once: true });
-document.addEventListener('keydown', handleFirstInteraction, { once: true });
-
-rumbleInterval = setInterval(() => {
-  if (!isOpen || !warehouseSvgEl) return;
-  warehouseSvgEl.style.transform = `translateX(${(Math.random() - 0.5) * 1.5}px)`;
-  setTimeout(() => {
-    if (warehouseSvgEl) warehouseSvgEl.style.transform = '';
-  }, 60);
-}, CONFIG.effects.rumbleLoopMs);
-
-window.addEventListener('beforeunload', cleanup, { once: true });
+// ================================
+// SVG RUMBLE
+// Tiny random horizontal shake while the warehouse is open.
+// ================================
+setInterval(() => {
+  if (!isOpen || !svgEl) return;
+  svgEl.style.transform = `translateX(${(Math.random() - 0.5) * 1.5}px)`;
+  setTimeout(() => { if (svgEl) svgEl.style.transform = ''; }, 60);
+}, 120);
 </script>
 </body>
 </html>
